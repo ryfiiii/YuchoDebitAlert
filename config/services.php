@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'line_notify' => [
+        'access_token' => env('LINE_NOTIFY_ACCESS_TOKEN'),
+    ],
+
 ];
