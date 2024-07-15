@@ -20,13 +20,6 @@ class CheckYuchoEmails extends Command
 
         foreach ($emails as $email) {
             $this->info('Processing email: ' . $email->getSubject());
-            Log::debug('Email content:', [
-                'subject' => $email->getSubject(),
-                'from' => $email->getFrom(),
-                'date' => $email->getDate(),
-                'html_body' => $email->getHTMLBody(),
-                'text_body' => $email->getTextBody(),
-            ]);
 
             $data = $emailService->extractYuchoEmailData($email);
             $this->info('抽出されたデータ: ' . json_encode($data));

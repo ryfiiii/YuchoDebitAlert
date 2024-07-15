@@ -14,26 +14,26 @@ class EmailService
         try {
             $client = Client::account('default');
             $client->connect();
-            Log::info('Successfully connected to IMAP server');
+            Log::info('IMAPサーバーに正常に接続しました');
 
             $folder = $client->getFolder('INBOX');
-            Log::info('Successfully opened INBOX folder');
+            Log::info('INBOXフォルダを正常に開きました');
 
             $since = Carbon::now()->subDays(7)->format('d-M-Y');
-            Log::info('Searching for emails since: ' . $since);
+            Log::info('検索対象日時: ' . $since);
 
             $messages = $folder->query()
-                ->subject('【ゆうちょデビット】ご利用のお知らせ')
+                ->subject('【ゆうちょデビット】ご利用のお知らせ') // 固定の件名でフィルタリング
                 ->since($since)
                 ->limit(30)
                 ->get();
 
-            Log::info('Total messages found: ' . count($messages));
+            Log::info('見つかったメッセージの総数: ' . count($messages));
 
             $newEmails = [];
             foreach ($messages as $message) {
                 $messageId = $message->getMessageId();
-                Log::info('Processing message ID: ' . $messageId);
+                Log::info('処理中のメッセージID: ' . $messageId);
 
                 if (!ProcessedEmail::where('message_id', $messageId)->exists()) {
                     $newEmails[] = $message;
@@ -41,17 +41,17 @@ class EmailService
                         'message_id' => $messageId,
                         'processed_at' => Carbon::now(),
                     ]);
-                    Log::info('New email found and processed: ' . $messageId);
+                    Log::info('新しいメールが見つかり、処理されました: ' . $messageId);
                 } else {
-                    Log::info('Email already processed: ' . $messageId);
+                    Log::info('既に処理済みのメール: ' . $messageId);
                 }
             }
 
-            Log::info('New emails found: ' . count($newEmails));
+            Log::info('新しく見つかったメールの数: ' . count($newEmails));
 
             return $newEmails;
         } catch (\Exception $e) {
-            Log::error('Error in getNewYuchoEmails: ' . $e->getMessage());
+            Log::error('getNewYuchoEmailsでエラーが発生しました: ' . $e->getMessage());
             throw $e;
         }
     }
@@ -60,9 +60,6 @@ class EmailService
     {
         // HTMLとプレーンテキストの両方を試みる
         $body = $email->getHTMLBody() ?: $email->getTextBody();
-
-        // デバッグ用にメール本文をログに記録
-        Log::debug('Original email body:', ['body' => $body]);
 
         // 文字エンコーディングの問題を解決するためにUTF-8に変換
         $body = mb_convert_encoding($body, 'UTF-8', 'AUTO');
@@ -73,21 +70,25 @@ class EmailService
         // 改行を空白に置換して、一行のテキストにする
         $body = preg_replace('/\s+/', ' ', $body);
 
-        Log::debug('Processed email body:', ['body' => $body]);
-
-        // 正規表現パターンを調整して、より柔軟に情報を抽出
-        preg_match('/利用日時\s*(\d{4}\/\d{2}\/\d{2}\s*\d{2}:\d{2}:\d{2})/', $body, $dateMatches);
-        preg_match('/利用店舗\s*([^\d]+)(?=\s*利用金額)/', $body, $storeMatches);
-        preg_match('/利用金額\s*(\d+(?:,\d+)?)\s*円/', $body, $amountMatches);
-
-        $data = [
-            'date' => trim($dateMatches[1] ?? ''),
-            'store' => trim($storeMatches[1] ?? ''),
-            'amount' => trim($amountMatches[1] ?? '')
+        // 固定のパターンに基づいて情報を抽出
+        $patterns = [
+            'date' => '/利用日時\s*(\d{4}\/\d{2}\/\d{2}\s*\d{2}:\d{2}:\d{2})/',
+            'store' => '/利用店舗\s*([^\s]+)/',
+            'amount' => '/利用金額\s*(\d+(?:,\d+)?)\s*円/'
         ];
 
+        $data = [];
+        foreach ($patterns as $key => $pattern) {
+            if (preg_match($pattern, $body, $matches)) {
+                $data[$key] = trim($matches[1]);
+            } else {
+                $data[$key] = '';
+                Log::warning("メール本文から{$key}の抽出に失敗しました");
+            }
+        }
+
         // 抽出したデータをログに記録
-        Log::info('Extracted email data:', $data);
+        Log::info('抽出されたメールデータ:', $data);
 
         return $data;
     }

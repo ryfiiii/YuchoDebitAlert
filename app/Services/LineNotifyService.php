@@ -26,11 +26,11 @@ class LineNotifyService
 
         // メッセージが空の場合は送信しない
         if (empty($message)) {
-            Log::warning('Skipping LINE Notify: Empty message', $data);
+            Log::warning('LINE通知をスキップ: メッセージが空です', $data);
             return false;
         }
 
-        Log::info('Sending LINE Notify message:', ['message' => $message]);
+        Log::info('LINE通知メッセージを送信中:', ['メッセージ' => $message]);
 
         try {
             $response = Http::withToken($this->accessToken)
@@ -39,23 +39,23 @@ class LineNotifyService
                     'message' => $message
                 ]);
 
-            Log::info('LINE Notify API response:', [
-                'status' => $response->status(),
-                'body' => $response->body()
+            Log::info('LINE通知APIレスポンス:', [
+                'ステータス' => $response->status(),
+                '本文' => $response->body()
             ]);
 
             if (!$response->successful()) {
-                Log::error('LINE Notify API error:', [
-                    'status' => $response->status(),
-                    'body' => $response->body()
+                Log::error('LINE通知APIエラー:', [
+                    'ステータス' => $response->status(),
+                    '本文' => $response->body()
                 ]);
                 return false;
             }
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Exception when sending LINE Notify:', [
-                'message' => $e->getMessage()
+            Log::error('LINE通知送信中の例外:', [
+                'メッセージ' => $e->getMessage()
             ]);
             return false;
         }
