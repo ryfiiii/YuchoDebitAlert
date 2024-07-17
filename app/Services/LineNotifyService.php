@@ -14,6 +14,15 @@ class LineNotifyService
         $this->accessToken = config('services.line_notify.access_token');
     }
 
+    /**
+     * LINE Notifyを使用して通知を送信する
+     *
+     * 指定されたデータに基づいてメッセージを構築し、LINE Notify APIを使用して通知を送信します。
+     *
+     * @param array $data 通知に含める情報 ['date' => 利用日時, 'store' => 利用店舗, 'amount' => 利用金額]
+     * @return bool 送信成功時はtrue、失敗時はfalse
+     * @throws \Exception HTTP要求中に例外が発生した場合
+     */
     public function sendNotification($data)
     {
         $message = "\n\n";

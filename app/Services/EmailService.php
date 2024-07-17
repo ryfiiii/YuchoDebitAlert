@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Log;
 
 class EmailService
 {
+    /**
+     * ゆうちょデビットの新規利用通知メールを取得する
+     *
+     * IMAPサーバーに接続し、指定された条件に合致する新しいメールを取得します。
+     * 取得したメールは重複処理を避けるためにデータベースに記録されます。
+     *
+     * @return array 新しく見つかったメールのリスト
+     * @throws \Exception IMAPサーバーへの接続やメールの取得中にエラーが発生した場合
+     */
     public function getNewYuchoEmails()
     {
         try {
@@ -56,6 +65,16 @@ class EmailService
         }
     }
 
+    /**
+     * メールの本文からゆうちょデビットの利用情報を抽出する
+     *
+     * このメソッドは、与えられたメールオブジェクトから本文を取得し、
+     * 利用日時、利用店舗、利用金額の情報を抽出します。
+     *
+     * @param object $email メールオブジェクト
+     * @return array 抽出された利用情報
+     *               ['date' => 利用日時, 'store' => 利用店舗, 'amount' => 利用金額]
+     */
     public function extractYuchoEmailData($email)
     {
         // HTMLとプレーンテキストの両方を試みる
